@@ -1,0 +1,45 @@
+{
+  "name": "dsh-projection-persist",
+  "version": "1.0.0",
+  "description": "Keeps session projection values (titles) alive across a Host generation reset: ProjectionValueStore.clear() retains every value and only drops the sequence watermark, so the session list never falls back to the untitled placeholder while refreshList() is still in flight.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "cordis.patch.yml"
+  ],
+  "license": "MIT",
+  "author": "iuuuuuuuu",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iuuuuuuuu/dsh-projection-persist.git"
+  },
+  "homepage": "https://github.com/iuuuuuuuu/dsh-projection-persist#readme",
+  "bugs": {
+    "url": "https://github.com/iuuuuuuuu/dsh-projection-persist/issues"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "projection",
+    "session-title"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-api-session-controller"
+      ]
+    }
+  }
+}

@@ -1,0 +1,15 @@
+# dsh-projection-persist — keep session projection values across a Host
+# generation reset (the "session title flickers to 未命名" symptom).
+#
+# Root cause: on every reconnect the client rebuilds the connection generation
+# and SessionManager.handleConnected() calls store.clear() for every resident
+# projection store, dropping titles until refreshList() answers.
+# The client half of this plugin replaces ProjectionValueStore.prototype.clear
+# so the value of every projection row survives and only the sequence
+# watermark is dropped (each `sequenced` row is downgraded in place to a
+# `cached` row, which a later cached list block or lower-seq frame may
+# still overwrite). Rollback: delete this file's insert row, or the whole
+# package directory — both are hot.
+- insert:
+    - id: projection-persist
+      name: dsh-projection-persist
