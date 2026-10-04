@@ -8,8 +8,22 @@
 # so the value of every projection row survives and only the sequence
 # watermark is dropped (each `sequenced` row is downgraded in place to a
 # `cached` row, which a later cached list block or lower-seq frame may
-# still overwrite). Rollback: delete this file's insert row, or the whole
-# package directory — both are hot.
+# still overwrite).
+#
+# The same client half also carries two further fixes:
+#   * list rebuild coalescing — the session list's Notifier#markDirty is swapped
+#     for markFrameDirty, so a burst of control frames produces one list rebuild
+#     per animation frame instead of one per frame-arrival microtask
+#     (measured 0.503 -> 0.080 full rebuilds per control frame, ~6.3x).
+#   * the running spinner — this WebView2 host reports
+#     prefers-reduced-motion: reduce unconditionally, which the shipped
+#     StateDot.module.css honours by setting animation:none on the spinner.
+#     An owned <style> re-declares the keyframes with !important inside the same
+#     media block, plus a MutationObserver on <head> that heals the element if
+#     anything removes it.
+#
+# Rollback: delete this file's insert row, or the whole package directory —
+# both are hot.
 - insert:
     - id: projection-persist
       name: dsh-projection-persist

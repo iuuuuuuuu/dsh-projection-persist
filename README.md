@@ -1,10 +1,14 @@
 # dsh-projection-persist
 
-让 DSH 的会话标题在一次连接重建（Host generation reset）中**不再掉成「未命名」**。
+三个修复的集合（宿主半边 + 浏览器半边，不修改 DSH 安装目录里的任何文件）：
+
+1. **会话标题**在一次连接重建（Host generation reset）中**不再掉成「未命名」**；
+2. **会话列表**不再被控制帧洪水逐帧全量重建（合帧到 rAF，实测约 6.3× 降幅）；
+3. **运行中的转圈动画**恢复旋转（本机 WebView2 恒报 `prefers-reduced-motion: reduce`）。
 
 > 症状：会话列表里的标题会短暂变成「未命名」（英文界面是 *Untitled*），随后自行恢复。
 
-这是一个 [DeepSeek Harness](https://github.com/deepseek-ai)（DSH）插件，包含宿主半边与浏览器半边，不需要修改 DSH 安装目录里的任何文件。
+这是一个 [DeepSeek Harness](https://github.com/deepseek-ai)（DSH）插件，包含宿主半边与浏览器半边。
 
 ---
 
@@ -90,14 +94,14 @@ pnpm add github:iuuuuuuuu/dsh-projection-persist
 插件生效时，宿主半边会在 `<DSH_HOME>/logs/projection-persist.log` 追加一行安装记录：
 
 ```json
-{"kind":"install","ok":true,"revision":6,"installed":"instance","wrapped":true,"swept":0,"prototypePatched":true,"stores":33}
+{"kind":"install","ok":true,"revision":9,"installed":"instance","wrapped":true,"swept":42,"prototypePatched":true,"stores":42,"framePatch":"patched","spinner":"installed","watch":"watching"}
 ```
 
 也可以直接查诊断端点（GET 返回当前 revision）：
 
 ```bash
 curl http://127.0.0.1:3080/dsh-projection-persist
-# {"ok":true,"name":"projection-persist","revision":6}
+# {"ok":true,"name":"projection-persist","revision":9}
 ```
 
 ## 回滚
@@ -116,15 +120,40 @@ curl http://127.0.0.1:3080/dsh-projection-persist
 - 已验证版本：`@deepseek-ai/dsh-api-session-controller` `0.2.0-rc.2`。
 - 只影响**管理器持有的**投影 store；会话自身持有的 store 不在此列（该 store 的 `seqOf` 有其它消费者）。
 
-## 已知残留（本插件不负责）
+## 另外两个修复（同一个客户端半边）
 
-心跳阈值是**独立的另一条链路**：把 `websocketHeartbeatIntervalMs` 调大只会降低重连**发生频率**，不能消除重连本身。
-两者叠加才是完整防线：
+### 1. 会话列表整表重建合帧
+
+`SessionManager` 的列表 `Notifier` 原本用 `markDirty()`（microtask 合帧）。控制帧是一条条独立的 socket task，
+microtask 根本合不掉它们，于是 8–15 个控制帧 ⇒ 8–15 次 `projectList()` 全量重建 + 无条件 `list.set()`。
+插件把**列表** notifier 的 `markDirty` 换成上游预留但从未启用的 `markFrameDirty()`（rAF 合帧，last-write-wins 不变，
+`ensureFresh()` 保证同步读仍然新鲜）。**`Session.notifier` 不动** —— 它的同步契约由 `beginSubmission`/`finishSubmission` 依赖。
+
+实测（交错 A/B × 3 轮，8 s/窗）：
+
+| | 触发次数 | 整表重建 | `list.set` | 每次触发重建 |
+|---|---|---|---|---|
+| 打补丁 | 176 | **14** | 34 | **0.080** |
+| 未打补丁 | 288 | 145 | 165 | **0.503** |
+
+约 **6.3×**（按观测帧率折算约 18/s → 约 1.8/s）。
+
+### 2. 运行中的转圈动画
+
+在 WebView2 宿主里 `matchMedia("(prefers-reduced-motion: reduce)")` **恒为 `true`**，
+命中 `StateDot.module.css` 的 `@media (prefers-reduced-motion: reduce) { .spinnerMotion, .spinnerArc { animation: none } }`，
+于是会话正在跑的时候不转圈。插件注入一段自有 `<style>`，在**同一个** media 块内用 `!important` 重声明关键帧
+（选择器限定 `svg[data-state="ongoing"] > g` 与 `circle[class*="spinnerArc"]`，不误伤另外 9 个合法的 reduced-motion 块），
+并在 `<head>` 上挂一个 `childList` `MutationObserver`，元素一旦被谁删掉就立刻重装（实测 `healedAtMs: 83`）。
+
+单独关掉转圈修复：`localStorage["dsh-projection-persist.spinner"] = "off"`。
+
+## 心跳阈值（另一条链路，本插件不负责）
+
+把 `websocketHeartbeatIntervalMs` 调大只会降低重连**发生频率**，不能消除重连本身。两者叠加才是完整防线：
 
 - 调大心跳间隔 ⇒ 减少重连**频率**；
 - 本插件 ⇒ 重连**真的发生时**标题不再丢。
-
-另外「整个列表重绘/闪烁」（`projectList()` 无条件 `list.set()` 等）是另一个问题域，本插件不涉及。
 
 ## License
 

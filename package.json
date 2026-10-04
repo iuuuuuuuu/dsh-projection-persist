@@ -1,7 +1,7 @@
 {
   "name": "dsh-projection-persist",
   "version": "1.0.0",
-  "description": "Keeps session projection values (titles) alive across a Host generation reset: ProjectionValueStore.clear() retains every value and only drops the sequence watermark, so the session list never falls back to the untitled placeholder while refreshList() is still in flight.",
+  "description": "Three fixes for the DSH web client, applied without touching the DSH installation: (1) session projection values (titles) survive a Host generation reset, (2) session-list rebuilds are coalesced to one per animation frame instead of one per control frame (~6.3x fewer full rebuilds), (3) the running-state spinner rotates even though this WebView2 host reports prefers-reduced-motion: reduce unconditionally.",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
