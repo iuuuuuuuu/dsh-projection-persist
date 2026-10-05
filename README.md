@@ -1,5 +1,9 @@
 # dsh-projection-persist
 
+[English](./README.en.md) | **简体中文**
+
+[![dsh-plugin](https://img.shields.io/badge/dsh--plugin-topic-2f6feb)](https://github.com/topics/dsh-plugin)
+
 三个修复的集合（宿主半边 + 浏览器半边，不修改 DSH 安装目录里的任何文件）：
 
 1. **会话标题**在一次连接重建（Host generation reset）中**不再掉成「未命名」**；

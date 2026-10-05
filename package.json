@@ -12,7 +12,8 @@
   "files": [
     "lib/index.js",
     "lib/client.js",
-    "cordis.patch.yml"
+    "cordis.patch.yml",
+    "README.en.md"
   ],
   "license": "MIT",
   "author": "iuuuuuuuu",
@@ -25,9 +26,9 @@
     "url": "https://github.com/iuuuuuuuu/dsh-projection-persist/issues"
   },
   "keywords": [
-    "deepseek-harness",
-    "dsh",
     "dsh-plugin",
+    "dsh",
+    "deepseek-harness",
     "projection",
     "session-title"
   ],
